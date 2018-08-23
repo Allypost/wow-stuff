@@ -153,7 +153,7 @@ function toHHMMSS(secs) {
 }
 
 function toHHMMSSmm(milliseconds) {
-    return `${toHHMMSS(milliseconds / 1000)} ${milliseconds % 1000}ms`;
+    return `${toHHMMSS(milliseconds / 1000)} ${String(milliseconds % 1000).padStart(3, '0')}ms`;
 }
 
 function getProgressBar(text) {
