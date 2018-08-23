@@ -339,11 +339,7 @@ async function doWork(timeout = 0) {
 
     await displayAuctions(auctionPromises);
 
-    const waitTime = 2 * 60 * 1000;
-    const fnTime = Date.now() - startTime;
-
-    console.log();
-    doWork(waitTime - fnTime);
+    doWork();
 }
 
 console.clear();
