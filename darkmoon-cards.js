@@ -73,12 +73,8 @@ async function fetchAuctionData(url, tick = () => 0) {
             });
 
             res.on('end', () => {
-                try {
-                    const { auctions } = JSON.parse(auctionData);
-                    resolve(auctions);
-                } catch (e) {
-                    reject(null);
-                }
+                tick(1);
+                resolve(auctionData);
             });
 
             res.on('error', () => {
@@ -154,6 +150,10 @@ function toHHMMSS(secs) {
                .map((v, i) => `${v}${timeNames[ i ]}`)
                .filter(t => t.substr(0, 1) !== '0')
                .join(' ') || '0s';
+}
+
+function toHHMMSSmm(milliseconds) {
+    return `${toHHMMSS(milliseconds / 1000)} ${milliseconds % 1000}ms`;
 }
 
 function getProgressBar(text) {
@@ -242,7 +242,7 @@ async function waitFor(milliseconds = 0, text = 'Waiting for') {
 
     function write(milliseconds) {
         clearLine();
-        process.stdout.write(fmt`|>  ${text} ^+${toHHMMSS(Math.ceil(milliseconds / 1000))} ${milliseconds % 1000}ms^\r`);
+        process.stdout.write(fmt`|>  ${text} ^+${toHHMMSSmm(milliseconds)}^\r`);
     }
 
     write(milliseconds);
@@ -320,18 +320,22 @@ async function doWork(timeout = 0) {
     lastDate = startTime;
 
     const progressBar = getProgressBar('Downloading auction data...');
-    const rawAuctions = await fetchAuctionData(url, progressBar.update);
+    const rawAuctionString = await fetchAuctionData(url, progressBar.update);
 
     log(fmt`Fetched data in ${toHHMMSS((Date.now() - startTime) / 1000)}^`);
 
+    log(`Processing data...`);
+    moveUpLines();
+
     const startTimeProcess = Date.now();
-    const mapper = formatAuctionData.bind(this, rawAuctions);
+    const { auctions } = JSON.parse(rawAuctionString);
+    const mapper = formatAuctionData.bind(this, auctions);
     const auctionPromises =
         Object.entries(decks)
               .map(([ deckId, cardIdList ]) => [ Number(deckId), cardIdList ])
               .map(mapper);
 
-    log(`Processed data in ${Date.now() - startTimeProcess}ms`);
+    log(`Processed data in ${toHHMMSSmm(Date.now() - startTimeProcess)}`);
 
     await displayAuctions(auctionPromises);
 
