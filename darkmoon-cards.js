@@ -214,7 +214,7 @@ async function displayAuctions(auctionPromises) {
 
                    return decks;
                })
-               .then((decks) => decks.forEach(async (deckData) => {
+               .then((decks) => Promise.all(decks.map(async (deckData) => {
                    const profitText = deckData.profit > 0 ? 'profit: ' : 'loss:   ';
                    const profitColor = getDeckNameColour(deckData);
 
@@ -233,21 +233,27 @@ async function displayAuctions(auctionPromises) {
                    log('  ', fmt`Deck sells for:   ${d}^yg^`);
                    log('  ', fmt`Card buyout cost: ${c}^yg^`);
                    log('  ', fmt`Post-Cut ${profitText} ${p}^yg^ (${profitPercent}% of cost)`);
-               }))
+               })))
     );
 }
 
 async function waitFor(milliseconds = 0, text = 'Waiting for') {
     const then = Date.now();
 
-    clearLine();
-    process.stdout.write(fmt`${text} ^+${toHHMMSS(Math.ceil(milliseconds / 1000))} ${milliseconds % 1000}ms^\r`);
+    function write(milliseconds) {
+        clearLine();
+        process.stdout.write(fmt`|>  ${text} ^+${toHHMMSS(Math.ceil(milliseconds / 1000))} ${milliseconds % 1000}ms^\r`);
+    }
+
+    write(milliseconds);
 
     return new Promise((resolve) => {
         setTimeout(() => {
             const diff = Date.now() - then;
+            const newTime = milliseconds - diff;
 
-            resolve(milliseconds - diff);
+            write(milliseconds);
+            resolve(newTime);
         }, 60);
     });
 }
@@ -286,6 +292,8 @@ const decks = {
     ],
 };
 
+let lastDate = 0;
+
 async function doWork(timeout = 0) {
     if (timeout > 0) {
         return waitFor(timeout)
@@ -303,7 +311,14 @@ async function doWork(timeout = 0) {
     const { url, date } = await getAuctionUrl();
     log(fmt`Latest auction data is ^+${toHHMMSS((moment().utc() - date) / 1000)} old^`);
 
+    if (lastDate >= date) {
+        log('Newest data is already displayed.');
+        return doWork(30000);
+    }
+
     const startTime = Date.now();
+    lastDate = startTime;
+
     const progressBar = getProgressBar('Downloading auction data...');
     const rawAuctions = await fetchAuctionData(url, progressBar.update);
 
