@@ -2,6 +2,7 @@ const http = require('http');
 const moment = require('moment');
 const request = require('request-promise');
 const formatText = require('string-kit').format;
+const osLocale = require('os-locale');
 
 function moveUpLines(numLines = 1) {
     process.stdout.write(`\x1b[${numLines}F`);
@@ -213,15 +214,25 @@ async function displayAuctions(auctionPromises) {
 
                    return decks;
                })
-               .then((decks) => decks.forEach((deck) => {
-                   const profitText = deck.profit > 0 ? 'profit: ' : 'loss:   ';
-                   const profitColor = getDeckNameColour(deck);
+               .then((decks) => decks.forEach(async (deckData) => {
+                   const profitText = deckData.profit > 0 ? 'profit: ' : 'loss:   ';
+                   const profitColor = getDeckNameColour(deckData);
+
+                   const locale = String(await osLocale()).replace('_', '-');
+                   const f = (num) => new Intl.NumberFormat(locale).format(num);
+
+                   const { deck, cost, profit: signedProfit, profitPercent } = deckData;
+                   const profit = Math.abs(signedProfit);
+
+                   const prices = [ deck, cost, profit ];
+                   const maxLen = Math.max(...prices.map((e) => f(e).length));
+                   const [ d, c, p ] = prices.map((e) => String(f(e)).padStart(maxLen, ' '));
 
                    console.log();
-                   log(fmt`^+${profitColor}${deck.name}^`);
-                   log('  ', fmt`Deck sells for:   ${deck.deck}^yg^`);
-                   log('  ', fmt`Card buyout cost: ${deck.cost}^yg^`);
-                   log('  ', fmt`Post-Cut ${profitText} ${Math.abs(deck.profit)}^yg^ (${deck.profitPercent}% of cost)`);
+                   log(fmt`^+${profitColor}${deckData.name}^`);
+                   log('  ', fmt`Deck sells for:   ${d}^yg^`);
+                   log('  ', fmt`Card buyout cost: ${c}^yg^`);
+                   log('  ', fmt`Post-Cut ${profitText} ${p}^yg^ (${profitPercent}% of cost)`);
                }))
     );
 }
