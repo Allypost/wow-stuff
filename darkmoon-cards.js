@@ -131,6 +131,7 @@ async function formatAuctionData(auctions, [ deckId, deckCards ]) {
     const profitPercent = Math.floor(profit / cardCost * 100);
 
     return {
+        id: deckId,
         name: deckData.name,
         deck: deckCost,
         cost: cardCost,
@@ -201,6 +202,28 @@ function getDeckNameColour(deck) {
     return '^g';
 }
 
+const lastData = {};
+
+function getDeltas(prices, lastData = []) {
+    return (
+        prices
+            .map((e, i) => [ e, lastData[ i ] ])
+            .map(([ current, previous ]) => {
+                if (!previous)
+                    return;
+
+                const delta = current - previous;
+
+                if (delta > 0)
+                    return fmt`^G▲^ ^g${delta}^^yg^`;
+
+                if (delta < 0)
+                    return fmt`^R▼^ ^r${-delta}^^yg^`;
+            })
+            .map((str) => str || fmt`^y~^ 0^yg^`)
+    );
+}
+
 async function displayAuctions(auctionPromises) {
     return (
         Promise.all(auctionPromises)
@@ -227,12 +250,14 @@ async function displayAuctions(auctionPromises) {
                    const prices = [ deck, cost, profit ];
                    const maxLen = Math.max(...prices.map((e) => f(e).length));
                    const [ d, c, p ] = prices.map((e) => String(f(e)).padStart(maxLen, ' '));
+                   const [ dd, cd, pd ] = getDeltas(prices, lastData[ deckData.id ]);
+                   lastData[ deckData.id ] = prices;
 
                    console.log();
                    log(fmt`^+${profitColor}${deckData.name}^`);
-                   log('  ', fmt`Deck sells for:   ${d}^yg^`);
-                   log('  ', fmt`Card buyout cost: ${c}^yg^`);
-                   log('  ', fmt`Post-Cut ${profitText} ${p}^yg^ (${profitPercent}% of cost)`);
+                   log('  ', fmt`Deck sells for:   ${d}^yg^ ${dd}`);
+                   log('  ', fmt`Card buyout cost: ${c}^yg^ ${cd}`);
+                   log('  ', fmt`Post-Cut ${profitText} ${p}^yg^ ${pd} (${profitPercent}% of cost)`);
                })))
     );
 }
