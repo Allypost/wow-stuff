@@ -205,7 +205,7 @@ async function displayAuctions(auctionPromises) {
     return (
         Promise.all(auctionPromises)
                .then((decks) => decks.filter((deck) => deck))
-               .then((decks) => decks.sort((a, b) => b.profitPercent * Math.sign(b.profit) - a.profitPercent * Math.sign(a.profit)))
+               .then((decks) => decks.sort((a, b) => b.profit - a.profit))
                .then((decks) => {
 //                   term.eraseDisplayBelow();
                    process.stdout.write('\x1b[0J');
