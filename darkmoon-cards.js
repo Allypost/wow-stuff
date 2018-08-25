@@ -207,22 +207,31 @@ const lastData = {};
 function getDeltas(prices, lastData = []) {
     let sign = 1;
 
-    return (
-        prices
-            .map((e, i) => [ e, lastData[ i ] ])
-            .map(([ current, previous ]) => {
-                if (!previous)
-                    return;
+    const deltas = prices
+        .map((e, i) => [ e, lastData[ i ] ])
+        .map(([ current, previous ]) => {
+            if (!previous)
+                return 0;
 
-                const delta = sign * (current - previous);
+            return current - previous;
+        });
+
+    const numLen = Math.max(...deltas.map(i => String(i).length + 1));
+
+    return (
+        deltas
+            .map((pureDelta) => {
+                const delta = sign * pureDelta;
                 const triangle = delta * sign > 0 ? '▲' : '▼';
                 sign *= -1;
 
+                const formattedDelta = String(delta).padStart(numLen, ' ');
+
                 if (delta > 0)
-                    return fmt`^G${triangle}^ ^g${delta}^^yg^`;
+                    return fmt`^G${triangle}^ ^g${formattedDelta}^^yg^`;
 
                 if (delta < 0)
-                    return fmt`^R${triangle}^ ^r${-delta}^^yg^`;
+                    return fmt`^R${triangle}^ ^r${formattedDelta}^^yg^`;
             })
             .map((str) => str || fmt`^y~^ 0^yg^`)
     );
