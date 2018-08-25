@@ -202,9 +202,7 @@ function getDeckNameColour(deck) {
     return '^g';
 }
 
-const lastData = {
-    '159127': [ 19903, 15800, 3906 ],
-};
+const lastData = {};
 
 function getDeltas(prices, lastData = []) {
     let sign = 1;
