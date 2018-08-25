@@ -248,8 +248,7 @@ async function displayAuctions(auctionPromises) {
                    const locale = String(await osLocale()).replace('_', '-');
                    const f = (num) => new Intl.NumberFormat(locale).format(num);
 
-                   const { deck, cost, profit: signedProfit, profitPercent } = deckData;
-                   const profit = Math.abs(signedProfit);
+                   const { deck, cost, profit, profitPercent } = deckData;
 
                    const prices = [ deck, cost, profit ];
                    const maxLen = Math.max(...prices.map((e) => f(e).length));
