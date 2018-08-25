@@ -202,9 +202,13 @@ function getDeckNameColour(deck) {
     return '^g';
 }
 
-const lastData = {};
+const lastData = {
+    '159127': [ 19903, 15800, 3906 ],
+};
 
 function getDeltas(prices, lastData = []) {
+    let sign = 1;
+
     return (
         prices
             .map((e, i) => [ e, lastData[ i ] ])
@@ -212,13 +216,15 @@ function getDeltas(prices, lastData = []) {
                 if (!previous)
                     return;
 
-                const delta = current - previous;
+                const delta = sign * (current - previous);
+                const triangle = delta * sign > 0 ? '▲' : '▼';
+                sign *= -1;
 
                 if (delta > 0)
-                    return fmt`^G▲^ ^g${delta}^^yg^`;
+                    return fmt`^G${triangle}^ ^g${delta}^^yg^`;
 
                 if (delta < 0)
-                    return fmt`^R▼^ ^r${-delta}^^yg^`;
+                    return fmt`^R${triangle}^ ^r${-delta}^^yg^`;
             })
             .map((str) => str || fmt`^y~^ 0^yg^`)
     );
