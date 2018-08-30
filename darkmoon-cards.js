@@ -295,7 +295,7 @@ async function waitFor(milliseconds = 0, text = 'Waiting for') {
     });
 }
 
-async function catchError() {
+async function catchError(err) {
     /*log('Something went wrong...');
     console.log();
 
@@ -305,7 +305,7 @@ async function catchError() {
         time = await waitFor(time, errorText);
     return doWork().catch(catchError);
     */
-    log('Something went wrong...');
+    log('Something went wrong...', err.message);
     console.log();
     return doWork(5000).catch(catchError);
 }
@@ -379,6 +379,8 @@ async function doWork(timeout = 0) {
     doWork();
 }
 
-console.clear();
-doWork()
-    .catch(catchError);
+(async () => {
+    console.clear();
+    doWork()
+        .catch(catchError);
+})();
