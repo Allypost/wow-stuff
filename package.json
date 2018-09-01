@@ -1,12 +1,9 @@
 {
   "dependencies": {
-    "moment": "^2.22.2",
     "nexe": "^2.0.0-rc.34",
     "os-locale": "^3.0.0",
-    "request": "^2.88.0",
     "request-promise": "^4.2.2",
-    "string-kit": "^0.8.11",
-    "terminal-kit": "^1.26.2"
+    "string-kit": "^0.8.11"
   },
   "scripts": {
     "build": "node build.js"
