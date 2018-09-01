@@ -1,33 +1,8 @@
 const http = require('http');
 const request = require('request-promise');
-const formatText = require('string-kit').format;
 const osLocale = require('os-locale');
 
-function moveUpLines(numLines = 1) {
-    process.stdout.write(`\x1b[${numLines}F`);
-}
-
-function moveTo(x = 1, y = 1) {
-    [ x, y ] = [ x, y ].map((x) => Math.max(1, x));
-
-    process.stdout.write(`\x1b[${x};${y}H`);
-}
-
-function clearLine() {
-    process.stdout.write('\x1b[2K\r');
-}
-
-function fmt(str, ...args) {
-    const d = (arr, i) => (arr[ i ] === undefined ? '' : arr[ i ]);
-    const s = str.map((v, i) => `${v}${d(args, i)}`).join('');
-
-    return formatText(s);
-}
-
-function log(...args) {
-    clearLine();
-    console.log(fmt`^-|>^ `, ...args);
-}
+const Console = require('./lib/Console');
 
 async function getItemData(itemId) {
     const uri = `https://eu.api.battle.net/wow/item/${itemId}?locale=en_GB&apikey=ajb6j8226ywqrt2mx6npqyut57czggau`;
@@ -172,8 +147,8 @@ function getProgressBar(text) {
     }
 
     function update(percentage = 0.0) {
-        log(`${text} | ${percent(percentage)} | ETA ${eta(percentage)}`);
-        moveUpLines();
+        Console.log(`${text} | ${percent(percentage)} | ETA ${eta(percentage)}`);
+        Console.moveUpLines();
     }
 
     return { update: (percent) => update(percent) };
@@ -227,12 +202,12 @@ function getDeltas(prices, lastData = []) {
                 const formattedDelta = String(delta).padStart(numLen, ' ');
 
                 if (delta > 0)
-                    return fmt`^G${triangle}^ ^g${formattedDelta}^^yg^`;
+                    return Console.format`^G${triangle}^ ^g${formattedDelta}^^yg^`;
 
                 if (delta < 0)
-                    return fmt`^R${triangle}^ ^r${formattedDelta}^^yg^`;
+                    return Console.format`^R${triangle}^ ^r${formattedDelta}^^yg^`;
             })
-            .map((str) => str || fmt`^y~^ 0^yg^`)
+            .map((str) => str || Console.format`^y~^ 0^yg^`)
     );
 }
 
@@ -245,7 +220,7 @@ async function displayAuctions(auctionPromises) {
 //                   term.eraseDisplayBelow();
                    process.stdout.write('\x1b[0J');
                    console.log('');
-                   log(fmt`^+Last results:^`);
+                   Console.log(Console.format`^+Last results:^`);
 
                    return decks;
                })
@@ -265,10 +240,10 @@ async function displayAuctions(auctionPromises) {
                    lastData[ deckData.id ] = prices;
 
                    console.log();
-                   log(fmt`^+${profitColor}${deckData.name}^`);
-                   log('  ', fmt`Deck sells for:   ${d}^yg^ ${dd}`);
-                   log('  ', fmt`Card buyout cost: ${c}^yg^ ${cd}`);
-                   log('  ', fmt`Post-Cut ${profitText} ${p}^yg^ ${pd} (${profitPercent}% of cost)`);
+                   Console.log(Console.format`^+${profitColor}${deckData.name}^`);
+                   Console.log('  ', Console.format`Deck sells for:   ${d}^yg^ ${dd}`);
+                   Console.log('  ', Console.format`Card buyout cost: ${c}^yg^ ${cd}`);
+                   Console.log('  ', Console.format`Post-Cut ${profitText} ${p}^yg^ ${pd} (${profitPercent}% of cost)`);
                })))
     );
 }
@@ -277,8 +252,8 @@ async function waitFor(milliseconds = 0, text = 'Waiting for') {
     const then = Date.now();
 
     function write(milliseconds) {
-        clearLine();
-        process.stdout.write(fmt`|>  ${text} ^+${toHHMMSSmm(milliseconds)}^\r`);
+        Console.clearLine();
+        process.stdout.write(Console.format`|>  ${text} ^+${toHHMMSSmm(milliseconds)}^\r`);
     }
 
     write(milliseconds);
@@ -295,7 +270,7 @@ async function waitFor(milliseconds = 0, text = 'Waiting for') {
 }
 
 async function catchError(err) {
-    /*log('Something went wrong...');
+    /*Console.log('Something went wrong...');
     console.log();
 
     const errorText = 'Trying again in';
@@ -304,7 +279,7 @@ async function catchError(err) {
         time = await waitFor(time, errorText);
     return doWork().catch(catchError);
     */
-    log('Something went wrong...', err.message);
+    Console.log('Something went wrong...', err.message);
     console.log();
     return doWork(5000).catch(catchError);
 }
@@ -337,18 +312,18 @@ async function doWork(timeout = 0) {
             .catch(catchError);
     }
 
-    clearLine();
-    moveTo(1, 1);
-    log('Fetching auction data info...');
-    log('');
-    log('');
-    moveUpLines(3);
+    Console.clearLine();
+    Console.moveTo(1, 1);
+    Console.log('Fetching auction data info...');
+    Console.log('');
+    Console.log('');
+    Console.moveUpLines(3);
 
     const { url, date } = await getAuctionUrl();
-    log(fmt`Latest auction data is ^+${toHHMMSS((new Date().getTime() - date) / 1000)} old^`);
+    Console.log(Console.format`Latest auction data is ^+${toHHMMSS((new Date().getTime() - date) / 1000)} old^`);
 
     if (lastDate >= date) {
-        log('Newest data is already displayed.');
+        Console.log('Newest data is already displayed.');
         return doWork(30000).catch(catchError);
     }
 
@@ -358,10 +333,10 @@ async function doWork(timeout = 0) {
     const progressBar = getProgressBar('Downloading auction data...');
     const rawAuctionString = await fetchAuctionData(url, progressBar.update);
 
-    log(fmt`Fetched data in ${toHHMMSS((Date.now() - startTime) / 1000)}^`);
+    Console.log(Console.format`Fetched data in ${toHHMMSS((Date.now() - startTime) / 1000)}^`);
 
-    log(`Processing data...`);
-    moveUpLines();
+    Console.log(`Processing data...`);
+    Console.moveUpLines();
 
     const startTimeProcess = Date.now();
     const { auctions } = JSON.parse(rawAuctionString);
@@ -371,7 +346,7 @@ async function doWork(timeout = 0) {
               .map(([ deckId, cardIdList ]) => [ Number(deckId), cardIdList ])
               .map(mapper);
 
-    log(`Processed data in ${toHHMMSSmm(Date.now() - startTimeProcess)}`);
+    Console.log(`Processed data in ${toHHMMSSmm(Date.now() - startTimeProcess)}`);
 
     await displayAuctions(auctionPromises);
 
