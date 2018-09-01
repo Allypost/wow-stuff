@@ -125,7 +125,7 @@ async function formatAuctionData(auctions, [ deckId, deckCards ]) {
 
     const deckCost = Math.ceil(deckAuction.buyout);
     const cardCost = cardAuctions.reduce((s, c) => s + c, 0);
-    const profit = Math.floor((deckCost - cardCost) * 0.95);
+    const profit = Math.floor(deckCost * 0.95 - cardCost);
 
     const deckData = await getItemData(deckId);
     const profitPercent = Math.floor(profit / cardCost * 100);
