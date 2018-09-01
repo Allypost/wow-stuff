@@ -1,9 +1,11 @@
 {
   "dependencies": {
-    "nexe": "^2.0.0-rc.34",
     "os-locale": "^3.0.0",
     "request-promise": "^4.2.2",
     "string-kit": "^0.8.11"
+  },
+  "devDependencies": {
+    "nexe": "^2.0.0-rc.34"
   },
   "scripts": {
     "build": "node build.js"
