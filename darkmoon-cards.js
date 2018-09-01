@@ -1,5 +1,4 @@
 const http = require('http');
-const moment = require('moment');
 const request = require('request-promise');
 const formatText = require('string-kit').format;
 const osLocale = require('os-locale');
@@ -346,7 +345,7 @@ async function doWork(timeout = 0) {
     moveUpLines(3);
 
     const { url, date } = await getAuctionUrl();
-    log(fmt`Latest auction data is ^+${toHHMMSS((moment().utc() - date) / 1000)} old^`);
+    log(fmt`Latest auction data is ^+${toHHMMSS((new Date().getTime() - date) / 1000)} old^`);
 
     if (lastDate >= date) {
         log('Newest data is already displayed.');
