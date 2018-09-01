@@ -350,7 +350,7 @@ async function doWork(timeout = 0) {
 
     if (lastDate >= date) {
         log('Newest data is already displayed.');
-        return doWork(30000);
+        return doWork(30000).catch(catchError);
     }
 
     const startTime = Date.now();
@@ -376,7 +376,7 @@ async function doWork(timeout = 0) {
 
     await displayAuctions(auctionPromises);
 
-    doWork();
+    doWork().catch(catchError);
 }
 
 (async () => {
