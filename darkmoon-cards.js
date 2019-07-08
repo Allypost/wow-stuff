@@ -1,62 +1,7 @@
-const http = require('http');
-const request = require('request-promise');
 const osLocale = require('os-locale');
 
 const Console = require('./lib/Console');
-
-async function getItemData(itemId) {
-    const uri = `https://eu.api.battle.net/wow/item/${itemId}?locale=en_GB&apikey=ajb6j8226ywqrt2mx6npqyut57czggau`;
-
-    return request(
-        {
-            uri,
-            json: true,
-            headers: {
-                'Accept': 'application/json',
-                'User-Agent': 'Allypost Profit Bot',
-            },
-        },
-    );
-}
-
-async function getAuctionUrl() {
-    const { url, lastModified: date } =
-        await request({ uri: 'https://eu.api.battle.net/wow/auction/data/draenor?locale=en_GB&apikey=ajb6j8226ywqrt2mx6npqyut57czggau', json: true })
-            .then(({ files }) => files.sort((a, b) => b.lastModified - a.lastModified).pop());
-
-    if (!url)
-        return { url: '', date: 0 };
-
-    return { url, date };
-}
-
-async function fetchAuctionData(url, tick = () => 0) {
-    if (!url)
-        return null;
-
-    let auctionData = '';
-
-    return new Promise((resolve, reject) => {
-        http.get(url, (res) => {
-            const totalLength = Number(res.headers[ 'content-length' ] || Number.MAX_SAFE_INTEGER);
-
-            res.on('data', (chunk) => {
-                auctionData += chunk;
-
-                tick(auctionData.length / totalLength);
-            });
-
-            res.on('end', () => {
-                tick(1);
-                resolve(auctionData);
-            });
-
-            res.on('error', () => {
-                reject(null);
-            });
-        });
-    });
-}
+const API = new (require('./lib/Blizzard/Api'))(require('./credentials.json'));
 
 function parseAuctionData(auctions = [], deckId, deckCards) {
     const deckAuction = {
@@ -76,8 +21,7 @@ function parseAuctionData(auctions = [], deckId, deckCards) {
                 || auction.buyout < deckAuction.buyout
             )
                 Object.assign(deckAuction, auction);
-        }
-        else if (deckCards.includes(item)) {
+        } else if (deckCards.includes(item)) {
             if (
                 !rawCardAuctions[ item ]
                 || auction.buyout < rawCardAuctions[ item ].buyout
@@ -101,7 +45,7 @@ async function formatAuctionData(auctions, [ deckId, deckCards ]) {
     const cardCost = cardAuctions.reduce((s, c) => s + c, 0);
     const profit = Math.floor(deckCost * 0.95 - cardCost);
 
-    const deckData = await getItemData(deckId);
+    const deckData = await API.getItemData(deckId);
     const profitPercent = Math.floor(profit / cardCost * 100);
 
     return {
@@ -217,7 +161,6 @@ async function displayAuctions(auctionPromises) {
                .then((decks) => decks.filter((deck) => deck))
                .then((decks) => decks.sort((a, b) => b.profit - a.profit))
                .then((decks) => {
-//                   term.eraseDisplayBelow();
                    process.stdout.write('\x1b[0J');
                    console.log('');
                    Console.log(Console.format`^+Last results:^`);
@@ -270,15 +213,6 @@ async function waitFor(milliseconds = 0, text = 'Waiting for') {
 }
 
 async function catchError(err) {
-    /*Console.log('Something went wrong...');
-    console.log();
-
-    const errorText = 'Trying again in';
-    let time = await waitFor(5000, errorText);
-    while (time > 0)
-        time = await waitFor(time, errorText);
-    return doWork().catch(catchError);
-    */
     Console.log('Something went wrong...', err.message);
     console.log();
     return doWork(5000).catch(catchError);
@@ -319,7 +253,7 @@ async function doWork(timeout = 0) {
     Console.log('');
     Console.moveUpLines(3);
 
-    const { url, date } = await getAuctionUrl();
+    const { url, date } = await API.getAuctionUrl();
     Console.log(Console.format`Latest auction data is ^+${toHHMMSS((new Date().getTime() - date) / 1000)} old^`);
 
     if (lastDate >= date) {
@@ -331,7 +265,7 @@ async function doWork(timeout = 0) {
     lastDate = startTime;
 
     const progressBar = getProgressBar('Downloading auction data...');
-    const rawAuctionString = await fetchAuctionData(url, progressBar.update);
+    const rawAuctionString = await API.fetchAuctionData(url, progressBar.update);
 
     Console.log(Console.format`Fetched data in ${toHHMMSS((Date.now() - startTime) / 1000)}^`);
 
@@ -355,6 +289,7 @@ async function doWork(timeout = 0) {
 
 (async () => {
     console.clear();
+    await API.startTokenRefresher();
     doWork()
         .catch(catchError);
 })();
