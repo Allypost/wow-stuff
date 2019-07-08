@@ -90,9 +90,23 @@ function getProgressBar(text) {
         return `${t.toFixed(2)}%`;
     }
 
-    function update(percentage = 0.0) {
-        Console.log(`${text} | ${percent(percentage)} | ETA ${eta(percentage)}`);
+    const output = `${text} | `;
+    let column = 0;
+
+    let initialized = false;
+
+    function init() {
+        column = Console.log(output);
         Console.moveUpLines();
+        initialized = true;
+    }
+
+    function update(percentage = 0.0) {
+        if (!initialized)
+            init();
+
+        Console.moveToColumn(column);
+        Console.write(`${percent(percentage)} | ETA ${eta(percentage)}`);
     }
 
     return { update: (percent) => update(percent) };
@@ -194,9 +208,12 @@ async function displayAuctions(auctionPromises) {
 async function waitFor(milliseconds = 0, text = 'Waiting for') {
     const then = Date.now();
 
+    const column = Console.log(`${text} `);
+    Console.moveUpLines();
+
     function write(milliseconds) {
-        Console.clearLine();
-        process.stdout.write(Console.format`|>  ${text} ^+${toHHMMSSmm(milliseconds)}^\r`);
+        Console.moveToColumn(column);
+        Console.write(Console.format`^+${toHHMMSSmm(milliseconds)}^`);
     }
 
     write(milliseconds);
