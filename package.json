@@ -2,7 +2,7 @@
   "dependencies": {
     "os-locale": "^3.1.0",
     "request-promise": "^4.2.4",
-    "string-kit": "^0.8.16"
+    "string-kit": "^0.12.8"
   },
   "devDependencies": {
     "nexe": "^2.0.0-rc.34"
